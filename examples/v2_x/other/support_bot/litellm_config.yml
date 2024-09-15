@@ -1,0 +1,13 @@
+model_list:
+  - model_name: llama3.1
+    litellm_params:
+      model: ollama/llama3.1
+      api_base: http://localhost:11434
+    model_info:
+      supports_function_calling: true
+  - model_name: phi3
+    litellm_params:
+      model: ollama/phi3
+      api_base: http://localhost:11434
+    model_info:
+      supports_function_calling: true

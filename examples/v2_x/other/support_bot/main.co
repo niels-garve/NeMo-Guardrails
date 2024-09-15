@@ -1,0 +1,151 @@
+import core
+import llm
+
+flow main
+    activate llm continuation
+    # activate automating intent detection
+    # activate generating user intent for unhandled user utterance
+
+    ##################################################
+    # Intent detection                               #
+    ##################################################
+
+    while True
+        when user greeted
+            reaction to user greeting
+        or when user said goodbye
+            handling user leaving
+        or when user requested contact details update
+            handling contact details update
+        or when unhandled user intent # For any user utterance that does not match
+            bot say "My apologies, I can't answer your question"
+
+##################################################
+# Intents                                        #
+##################################################
+
+flow user greeted
+    user said "Hi"
+        or user said "Hello"
+        or user said "Hey"
+        or user said "Good morning"
+        or user said "Good afternoon"
+        or user said "Good evening"
+        or user said "Hi there"
+        or user said "Howdy"
+        or user said "What's up?"
+        or user said "Greetings"
+        or user said "Hey there"
+        or user said "Hiya"
+        or user said "Yo"
+        or user said "Hi, how are you?"
+        or user said "Hello, how's it going?"
+        or user said "What's good?"
+        or user said "Hey, how have you been?"
+        or user said "Hello, anyone there?"
+        or user said "Hey, you around?"
+
+flow user said goodbye
+    user said "Bye"
+        or user said "See you"
+        or user said "Goodbye"
+        or user said "Catch you later"
+        or user said "Talk to you soon"
+        or user said "See you later"
+        or user said "I'm out"
+        or user said "Peace"
+        or user said "Take care"
+        or user said "Farewell"
+        or user said "See you next time"
+        or user said "Later"
+        or user said "I'm heading out"
+        or user said "See you soon"
+        or user said "Bye for now"
+        or user said "Have a good one"
+        or user said "Goodnight"
+        or user said "Till next time"
+        or user said "I'm signing off"
+
+flow user requested contact details update
+    user said "I want to update my phone number"
+        or user said "How can I change my email address?"
+        or user said "I'd like to modify my contact information"
+        or user said "Can I update my contact details?"
+        or user said "I need to change my address"
+        or user said "How do I update my contact info?"
+        or user said "I want to change my email"
+        or user said "Can I update my phone number?"
+        or user said "I need to change my contact details"
+        or user said "How can I update my address?"
+        or user said "I want to edit my contact information"
+        or user said "I need to modify my phone number"
+        or user said "Can I update my email address?"
+        or user said "I want to change my home address"
+        or user said "How do I change my contact details?"
+        or user said "I need to update my phone number"
+        or user said "How do I change my email?"
+        or user said "I'd like to change my contact info"
+        or user said "Can I change my address?"
+        or user said "I want to update my details"
+
+##################################################
+# Handler                                        #
+##################################################
+
+flow reaction to user greeting
+    global $name
+
+    if $name
+        bot say "Hi {$name}!"
+    else
+        bot say "Hi there! What's your name?"
+        await user said something as $name_ref
+        $name = $name_ref.transcript
+
+        start_new_flow_instance: # Start a new instance of the flow and continue with this one
+
+flow handling user leaving
+    bot say "Goodbye, see you next time!"
+
+flow handling contact details update
+    global $is_authenticated
+
+    if $is_authenticated
+        bot say "Please provide your new contact details:"
+        await user said something as $contact_ref
+        bot say "Got it, thanks!"
+    else
+        handling authentication
+        start_new_flow_instance: # Start a new instance of the flow and continue with this one
+
+flow handling authentication
+    global $name
+    global $email
+    global $is_authenticated
+
+    $is_authenticated = False
+
+    bot say "Sure thing! Please enter your email address. I'll send you a code that authenticates it's you"
+    await user said something as $email_ref
+    $email = $email_ref.transcript
+    $token = await SendAuthenticationEmailAction(email_transcript=$email_ref.transcript)
+
+    if $token != "None"
+        bot say "Email sent successfully to {$email}. Please enter the token below:"
+
+        $i = 3
+        while $i != 0
+            await user said something as $retry_ref
+
+            if $retry_ref.transcript == $token
+                $is_authenticated = True
+                if $name
+                    bot say "Thanks, {$name}!"
+                else
+                    bot say "Thanks!"
+                break
+            else
+                bot say "The token you entered is incorrect. Please try again. You have {$i} more chances."
+            $i = $i - 1
+    else
+        bot say "Failed to send email to {$email}. Did I spell it correctly?"
