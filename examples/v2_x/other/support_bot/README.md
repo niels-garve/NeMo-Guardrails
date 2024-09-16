@@ -8,6 +8,7 @@ This demos a complete example and aims for an AWS Lex- or Cognigy-like experienc
    ```shell
     $ pip install 'litellm[proxy]'
     $ pip install aiosmtpd
+    $ pip install langchain-nvidia-ai-endpoints
     ```
 2. Start the LiteLLM Proxy Server (LLM Gateway):
    ```shell

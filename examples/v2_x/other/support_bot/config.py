@@ -20,6 +20,7 @@ from uuid import uuid4
 from nemoguardrails import LLMRails
 from nemoguardrails.actions import action
 from nemoguardrails.actions.actions import ActionResult
+from nemoguardrails.llm.output_parsers import _replace_prefix
 
 SENDER_EMAIL = "sender@example.com"
 SMTP_SERVER = "localhost"
@@ -53,5 +54,11 @@ async def SendAuthenticationEmailAction(
         return ActionResult(return_value="None")
 
 
+def user_intent_parser(output: str) -> str:
+    return _replace_prefix(output.strip().lower(), "user intent: ", "")
+
+
 def init(app: LLMRails):
     app.register_action(SendAuthenticationEmailAction, "SendAuthenticationEmailAction")
+
+    app.register_output_parser(user_intent_parser, "my_user_intent")
