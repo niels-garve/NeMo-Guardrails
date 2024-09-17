@@ -17,6 +17,10 @@ flow main
             handling user leaving
         or when user requested contact details update
             handling contact details update
+        or when user asked about the jobs report
+            handling jobs report question
+        or when user engaged in chitchat
+            handling chitchat
         or when unhandled user intent # For any user utterance that does not match
             bot say "My apologies, I can't answer your question"
 
@@ -88,6 +92,41 @@ flow user requested contact details update
         or user said "Can I change my address?"
         or user said "I want to update my details"
 
+flow user asked about the jobs report
+    user said "Did unemployment rate change in March 2023?"
+        or user said "March's job numbers in leisure and hospitality?"
+        or user said "Part-time job stats for March 2023?"
+        or user said "How did government jobs do in March?"
+        or user said "Any major health care job changes last March?"
+        or user said "March unemployment rate for Hispanics?"
+        or user said "Info on long-term unemployed in March?"
+        or user said "Hourly earnings update for March 2023?"
+        or user said "People wanting jobs but not in the labor force in March?"
+        or user said "Discouraged workers in March, any news?"
+        or user said "Retail trade jobs update for March?"
+        or user said "Did work hours change in March?"
+        or user said "Job losses in transportation for March?"
+        or user said "Labor force participation rate in March?"
+        or user said "Significant employment shifts in March?"
+        or user said "Trends in business services jobs for March?"
+        or user said "Any revisions in past job data for March?"
+        or user said "Teen job situation in March?"
+        or user said "Food services job update for March?"
+        or user said "Construction job changes in March?"
+
+flow user engaged in chitchat
+    # TODO possibly extend with `...`?
+    user said "How are you?"
+        or user said "What's up?"
+        or user said "How's it going?"
+        or user said "Anything interesting today?"
+        or user said "What are you up to?"
+        or user said "How’s your day?"
+        or user said "Hope you’re doing well"
+        or user said "What do you think about today?"
+        or user said "Do you have any plans for today?"
+        or user said "It's nice to talk to you"
+
 ##################################################
 # Handler                                        #
 ##################################################
@@ -149,3 +188,22 @@ flow handling authentication
             $i = $i - 1
     else
         bot say "Failed to send email to {$email}. Did I spell it correctly?"
+
+flow handling jobs report question
+    """Use the following pieces of context to answer the question at the end.
+    If you don't know the answer, just say that you don't know, don't try to make up an answer.
+    Use three sentences maximum and keep the answer as concise as possible.
+    Always start your answer with "bot say ", and enclose it in triple quotes: bot say '''[your answer]'''
+    (no "." at the end)
+
+    # Context:
+    {{ relevant_chunks }}
+
+    Question: {{ last_user_message }}
+
+    Your Answer:"""
+    $relevant_chunks = await RetrieveRelevantChunksAction()
+    ...
+
+flow handling chitchat
+    llm continue interaction

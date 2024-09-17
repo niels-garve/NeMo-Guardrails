@@ -20,11 +20,28 @@ from uuid import uuid4
 from nemoguardrails import LLMRails
 from nemoguardrails.actions import action
 from nemoguardrails.actions.actions import ActionResult
+from nemoguardrails.kb.kb import KnowledgeBase
 from nemoguardrails.llm.output_parsers import _replace_prefix
 
 SENDER_EMAIL = "sender@example.com"
 SMTP_SERVER = "localhost"
 SMTP_PORT = 8025
+
+
+@action()
+async def RetrieveRelevantChunksAction(
+    context: dict, kb: KnowledgeBase
+) -> ActionResult:
+    user_message = context.get("last_user_message")
+    context_updates = {}
+
+    # For our custom RAG, we re-use the built-in retrieval
+    chunks = await kb.search_relevant_chunks(user_message)
+    relevant_chunks = "\n".join([chunk["body"] for chunk in chunks])
+    # Store the chunks for downstream use
+    context_updates["relevant_chunks"] = relevant_chunks
+
+    return ActionResult(return_value=relevant_chunks, context_updates=context_updates)
 
 
 @action()
@@ -59,6 +76,9 @@ def user_intent_parser(output: str) -> str:
 
 
 def init(app: LLMRails):
+    # Actions
+    app.register_action(RetrieveRelevantChunksAction, "RetrieveRelevantChunksAction")
     app.register_action(SendAuthenticationEmailAction, "SendAuthenticationEmailAction")
 
+    # Output parsers
     app.register_output_parser(user_intent_parser, "my_user_intent")
