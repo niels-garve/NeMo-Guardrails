@@ -49,6 +49,7 @@ flow generating user intent for unhandled user utterance
   activate polling llm request response
   activate tracking bot talking state
   global $bot_talking_state
+  global $user_message
 
   await _user_said_something_unexpected as $user_said
   $event = $user_said.event
@@ -58,9 +59,9 @@ flow generating user intent for unhandled user utterance
     log 'flow aborted since bot is in talking state'
     abort
 
-  log 'unexpected user utterance: "{$event.final_transcript}"'
+  log 'unexpected user utterance: "{$user_message}"'
   log 'start generating user intent...'
-  $action = 'user said "{$event.final_transcript}"'
+  $action = 'user said "{$user_message}"'
   $intent = await GenerateUserIntentAction(user_action=$action, max_example_flows=20)
   log 'generated user intent: {$intent}'
 
@@ -68,7 +69,7 @@ flow generating user intent for unhandled user utterance
   send FinishFlow(flow_id=$intent)
 
   # We need to log the user action
-  send UserActionLog(flow_id="user said", parameter=$event.final_transcript, intent_flow_id=$intent)
+  send UserActionLog(flow_id="user said", parameter=$user_message, intent_flow_id=$intent)
   # And we also need to log the generated user intent if not done by another mechanism
   when UserIntentLog(flow_id=$intent)
     return

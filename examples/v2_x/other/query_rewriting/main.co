@@ -1,0 +1,165 @@
+import core
+import llm
+import guardrails
+
+flow input rails $input_text
+    rephrase user message $input_text
+
+flow rephrase user message $input_text
+    """Given the following conversation and a follow up input, rephrase the follow up input to be a standalone input,
+    in its original language. Generate the output in the following format:
+
+    $rephrased_user_message = '''<<the response>>'''
+
+    Conversation:
+    {{ history | co_v2 }}
+
+    Follow-up input:
+    {{ input_text }}
+
+    Your Response:"""
+    global $user_message
+    global $last_user_message
+    ...
+    $user_message = $rephrased_user_message
+    $last_user_message = $rephrased_user_message
+
+# The following comment contains the current workaround:
+# 1. match UtteranceUserActionFinished
+# 2. Rewrite the transcript.
+# 3. send UtteranceUserActionFinished with same `action_uid` and `is_success` but with updated transcript
+#
+#@override
+#flow _user_said_something_unexpected -> $event
+#    """Given the following conversation and a follow up input, rephrase the follow up input to be a standalone input,
+#    in its original language. Generate the output in the following format:
+#
+#    $rephrased_user_message = '''<<the response>>'''
+#
+#    Conversation:
+#    {{ history | co_v2 }}
+#
+#    Question: {{ question }}
+#
+#    Your Response:"""
+#    global $user_message
+#    global $last_user_message
+#    match UnhandledEvent(event="UtteranceUserActionFinished", loop_ids={$self.loop_id}) as $e
+#    $question = $e.final_transcript
+#    ...
+#    send UtteranceUserActionFinished(
+#        final_transcript=$rephrased_user_message, action_uid=$e.action_uid, is_success=$e.is_success
+#    ) as $event
+#    $user_message = $rephrased_user_message
+#    $last_user_message = $rephrased_user_message
+
+flow main
+    activate llm continuation
+
+    while True
+        when user greeted
+            reaction to user greeting
+        or when user said goodbye
+            handling user leaving
+        or when user asked about bikes
+            answering bike questions
+        or when unhandled user intent
+            bot say "My apologies, I can't answer your question"
+
+##################################################
+# Intents                                        #
+##################################################
+
+flow user greeted
+    user said "Hi"
+        or user said "Hello"
+        or user said "Hey"
+        or user said "Good morning"
+        or user said "Good afternoon"
+        or user said "Good evening"
+        or user said "Hi there"
+        or user said "Howdy"
+        or user said "What's up?"
+        or user said "Greetings"
+        or user said "Hey there"
+        or user said "Hiya"
+        or user said "Yo"
+        or user said "Hi, how are you?"
+        or user said "Hello, how's it going?"
+        or user said "What's good?"
+        or user said "Hey, how have you been?"
+        or user said "Hello, anyone there?"
+        or user said "Hey, you around?"
+
+flow user said goodbye
+    user said "Bye"
+        or user said "See you"
+        or user said "Goodbye"
+        or user said "Catch you later"
+        or user said "Talk to you soon"
+        or user said "See you later"
+        or user said "I'm out"
+        or user said "Peace"
+        or user said "Take care"
+        or user said "Farewell"
+        or user said "See you next time"
+        or user said "Later"
+        or user said "I'm heading out"
+        or user said "See you soon"
+        or user said "Bye for now"
+        or user said "Have a good one"
+        or user said "Goodnight"
+        or user said "Till next time"
+        or user said "I'm signing off"
+
+flow user asked about bikes
+    user said "Show me bikes"
+        or user said "I want to see bikes"
+        or user said "Do you have any bicycles?"
+        or user said "Can you show me some bikes?"
+        or user said "I'm looking for bikes"
+        or user said "Bicycles available?"
+        or user said "What bicycles do you have?"
+        or user said "Can you display bikes for me?"
+        or user said "I'd like to see your bikes"
+        or user said "Do you sell bicycles?"
+        or user said "Bike options?"
+        or user said "What kinds of bikes do you have?"
+        or user said "Show me your bicyles collection"
+        or user said "Can I browse your bikes?"
+        or user said "What bikes do you offer?"
+        or user said "I'm interested in buying a bike"
+        or user said "Any bicycles for sale?"
+        or user said "What's in your bicycle inventory?"
+        or user said "Do you have a bike catalog?"
+        or user said "I'd like to look at bikes"
+
+##################################################
+# Handler                                        #
+##################################################
+
+flow reaction to user greeting
+    global $name
+
+    if $name
+        bot say "Hi {$name}!"
+    else
+        bot say "Hi there! What's your name?"
+        await user said something as $name_ref
+        $name = $name_ref.transcript
+
+        start_new_flow_instance: # Start a new instance of the flow and continue with this one
+
+flow handling user leaving
+    bot say "Goodbye, see you next time!"
+
+flow answering bike questions
+    """You are an assistant that should talk to the user about bikes.
+    Politely decline to talk about anything else.
+
+    Last user question is: "{{ last_user_message }}"
+    Generate the output in the following format:
+
+    bot say '''<<the response>>'''
+    """
+    ...

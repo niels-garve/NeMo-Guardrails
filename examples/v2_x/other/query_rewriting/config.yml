@@ -1,0 +1,55 @@
+colang_version: 2.x
+
+models:
+  - type: main
+    engine: openai
+    model: gpt-4o-mini-2024-07-18
+
+prompts:
+  - task: generate_user_intent_from_user_action
+    models:
+      - openai/gpt-4o-mini-2024-07-18
+    messages:
+      - type: system
+        content: |-
+          ## Instructions:
+
+          1. Given the current conversation below and a follow-up input, rephrase the follow-up input to be a
+             standalone `user action:`, in its original language. Use this for the next step, but do not include it in
+             your final answer.
+
+          2. Derive `user intent:` from the user action by considering the intents from the 'Most likely intents'
+             section.
+
+          **Note**: Your final answer should only include the "user intent:" followed by your chosen intent, e.g.:
+
+          user intent: <<the intent>>
+
+          ### Example:
+
+          - **Current conversation:**
+            user said "Do you have any bikes?"
+            bot say "Yes, we have a wide range of bikes. Would you like to see them?"
+            user said "sure"
+
+          - **Follow-up input:**
+            user said "sure"
+
+          - **Rephrased user action:**
+            user said "Show me some bikes!"
+
+          - **Derived user intent:**
+            user intent: user asked about bikes
+
+          ## Current conversation:
+          {{ history | co_v2 }}
+
+          ## Follow-up input:
+          {{ user_action }}
+
+          ## Most likely intents:
+          {{ examples }}
+
+          Your answer:
+
+    output_parser: "my_user_intent"
